@@ -50,4 +50,22 @@ $functions = array(
         'type'        => 'read',
         'ajax'        => true
     ),
+    'mod_customcert_get_customcert_pdf' => array(
+        'classname'   => 'mod_customcert\external',
+        'methodname'  => 'get_customcert_pdf',
+        'classpath'   => '',
+        'description' => 'Returns the PDF Certificate',
+        'type'        => 'read',
+        'services'    => array(MOODLE_OFFICIAL_MOBILE_SERVICE),
+        'ajax'        => true
+    ),
+    'mod_customcert_get_customcert_user' => array(
+        'classname'   => 'mod_customcert\external',
+        'methodname'  => 'get_customcert_user',
+        'classpath'   => '',
+        'description' => 'Returns user certs',
+        'type'        => 'read',
+        'services'    => array(MOODLE_OFFICIAL_MOBILE_SERVICE),
+        'ajax'        => true
+    ),
 );

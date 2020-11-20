@@ -227,4 +227,96 @@ class external extends \external_api {
     public static function delete_issue_returns() {
         return new \external_value(PARAM_BOOL, 'True if successful, false otherwise');
     }
+
+    /**
+     * Returns the parameters.
+     *
+     * @return \external_function_parameters
+     */
+    public static function get_customcert_pdf_parameters() {
+        return new \external_function_parameters(
+            array(
+                'userid' => new \external_value(PARAM_INT, 'id of user'),
+                'courseid' => new \external_value(PARAM_FLOAT, 'id of course'),                    
+            )
+        );
+    }
+    public static function get_customcert_pdf_returns() {
+        return new \external_value(PARAM_RAW, 'The Cert');
+    }
+
+    /**
+     * Return PDF Cert.
+     *
+     * @param int $userid The template id
+     * @param int $courseid The element id.
+     * @return string
+     */
+    public static function get_customcert_pdf($userid, $courseid) {
+        global $CFG, $DB;
+
+        $result = array();
+        $params = self::validate_parameters(self::get_customcert_pdf_parameters(), 
+                                            array('userid'=>$userid,
+                                                  'courseid'=>$courseid));
+        $user   = $DB->get_record('user', array('id' => $userid), '*', MUST_EXIST);
+        $course = $DB->get_record('course', array('id' => $courseid), '*', MUST_EXIST);
+        $customcert = $DB->get_record('customcert', array('course' => $courseid), '*', MUST_EXIST);
+        $template = $DB->get_record('customcert_templates', array('id' => $customcert->templateid), '*', MUST_EXIST);
+        $template = new \mod_customcert\template($template);
+        return $template->generate_pdf(false, $userid);
+    }
+
+
+    /**
+     * Returns the parameters.
+     *
+     * @return \external_function_parameters
+     */
+    public static function get_customcert_user_parameters() {
+        return new \external_function_parameters(
+            array(
+                'userid' => new \external_value(PARAM_INT, 'id of user'),
+            )
+        );
+    }
+
+    /**
+     * Returns description of method result value
+     *
+     * @return external_description
+     * @since Moodle 3.2
+     */
+    public static function get_customcert_user_returns() {
+        return new \external_multiple_structure(
+            new \external_single_structure(
+                array(
+                    'courseid' => new \external_value(PARAM_INT, 'id of course'))
+            )   
+        );
+
+    }
+
+    /**
+     * Returns the courseid's where the user has a certificate available..
+     *
+     * @param int $userid The user id
+     * @return array
+     */
+    public static function get_customcert_user($userid) {
+        global $CFG, $DB;
+
+        $certs = array();
+        $params = self::validate_parameters(self::get_customcert_user_parameters(), 
+                                            array('userid'=>$userid));
+        $user   = $DB->get_record('user', array('id' => $userid), '*', MUST_EXIST);
+        $customcert_isues = $DB->get_records('customcert_issues', array('userid' => $userid));
+        foreach ($customcert_isues as $issue){
+            $customcert = $DB->get_record('customcert', array('id' => $issue->customcertid), '*', MUST_EXIST);
+            $certs[] = array(
+                'courseid' => $customcert->course
+            );
+        }
+        return $certs;
+    }
 }
