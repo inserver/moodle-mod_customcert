@@ -228,20 +228,26 @@ class external extends \external_api {
         return new \external_value(PARAM_BOOL, 'True if successful, false otherwise');
     }
 
+
+    /*
+    Devuelve el pdf del certificado cuando solo hay un certificado
+    en el curso, pasandole como parámetro el curseid y el userid
+    */
+
     /**
      * Returns the parameters.
      *
      * @return \external_function_parameters
      */
-    public static function get_customcert_pdf_parameters() {
+    public static function get_customcert_course_pdf_parameters() {
         return new \external_function_parameters(
             array(
                 'userid' => new \external_value(PARAM_INT, 'id of user'),
-                'courseid' => new \external_value(PARAM_FLOAT, 'id of course'),                    
+                'courseid' => new \external_value(PARAM_INT, 'id of course'),                    
             )
         );
     }
-    public static function get_customcert_pdf_returns() {
+    public static function get_customcert_course_pdf_returns() {
         return new \external_value(PARAM_RAW, 'The Cert');
     }
 
@@ -252,21 +258,28 @@ class external extends \external_api {
      * @param int $courseid The element id.
      * @return string
      */
-    public static function get_customcert_pdf($userid, $courseid) {
+    public static function get_customcert_course_pdf($userid, $courseid) {
         global $CFG, $DB;
 
         $result = array();
-        $params = self::validate_parameters(self::get_customcert_pdf_parameters(), 
+        $params = self::validate_parameters(self::get_customcert_course_pdf_parameters(), 
                                             array('userid'=>$userid,
                                                   'courseid'=>$courseid));
-        $user   = $DB->get_record('user', array('id' => $userid), '*', MUST_EXIST);
+        
         $course = $DB->get_record('course', array('id' => $courseid), '*', MUST_EXIST);
         $customcert = $DB->get_record('customcert', array('course' => $courseid), '*', MUST_EXIST);
         $template = $DB->get_record('customcert_templates', array('id' => $customcert->templateid), '*', MUST_EXIST);
         $template = new \mod_customcert\template($template);
         return $template->generate_pdf(false, $userid);
+        
+        
+        
     }
 
+
+    /*
+    Devuelve el courseid y el certid para posteriormente descargar el certificado correcto
+    */
 
     /**
      * Returns the parameters.
@@ -291,7 +304,9 @@ class external extends \external_api {
         return new \external_multiple_structure(
             new \external_single_structure(
                 array(
-                    'courseid' => new \external_value(PARAM_INT, 'id of course'))
+                    'courseid' => new \external_value(PARAM_INT, 'id of course'),
+                    'certid' => new \external_value(PARAM_INT, 'id of template cert')
+                    )
             )   
         );
 
@@ -314,9 +329,54 @@ class external extends \external_api {
         foreach ($customcert_isues as $issue){
             $customcert = $DB->get_record('customcert', array('id' => $issue->customcertid), '*', MUST_EXIST);
             $certs[] = array(
-                'courseid' => $customcert->course
+                'courseid' => $customcert->course,
+                'certid' => $customcert->templateid
             );
         }
         return $certs;
     }
+
+
+    /*
+    Devuelve el pdf del certificado cuando hay más de un
+    certificado en el curso. Pasandole el templateid (certid)
+    */
+
+    /**
+     * Returns the parameters.
+     *
+     * @return \external_function_parameters
+     */
+    public static function get_customcert_cert_pdf_parameters() {
+        return new \external_function_parameters(
+            array(
+                'userid' => new \external_value(PARAM_INT, 'id of user'),
+                'certid' => new \external_value(PARAM_FLOAT, 'id of cert'),                    
+            )
+        );
+    }
+    public static function get_customcert_cert_pdf_returns() {
+        return new \external_value(PARAM_RAW, 'The Cert');
+    }
+
+    /**
+     * Return PDF Cert.
+     *
+     * @param int $userid The template id
+     * @param int $courseid The element id.
+     * @return string
+     */
+    public static function get_customcert_cert_pdf($userid, $certid) {
+        global $CFG, $DB;
+
+        $result = array();
+        $params = self::validate_parameters(self::get_customcert_cert_pdf_parameters(), 
+                                            array('userid'=>$userid,
+                                                  'certid'=>$certid));
+        $template = $DB->get_record('customcert_templates', array('id' => $certid), '*', MUST_EXIST);
+        $template = new \mod_customcert\template($template);
+        return $template->generate_pdf(false, $userid);
+    }
+
+
 }
